@@ -21,16 +21,20 @@
 #include <cstdio>
 #include <cstring>
 #include <vector>
+#include <dmlc/memory_io.h>
 #include "common/common.h"
 #include "common/config.h"
 #include "common/io.h"
 #include "common/version.h"
+#include "data/simple_dmatrix.h"
+#include "data/adapter.h"
 
 namespace xgboost {
 enum CLITask {
   kTrain = 0,
   kDumpModel = 1,
-  kPredict = 2
+  kPredict = 2,
+  kPredictStream = 3
 };
 
 struct CLIParam : public XGBoostParameter<CLIParam> {
@@ -75,7 +79,7 @@ struct CLIParam : public XGBoostParameter<CLIParam> {
   /*! \brief all the configurations */
   std::vector<std::pair<std::string, std::string> > cfg;
 
-  static constexpr char const* const kNull = "NULL";
+  static constexpr char const *const kNull = "NULL";
 
   // declare parameters
   DMLC_DECLARE_PARAMETER(CLIParam) {
@@ -84,6 +88,7 @@ struct CLIParam : public XGBoostParameter<CLIParam> {
         .add_enum("train", kTrain)
         .add_enum("dump", kDumpModel)
         .add_enum("pred", kPredict)
+        .add_enum("predStream", kPredictStream)
         .describe("Task to be performed by the CLI program.");
     DMLC_DECLARE_FIELD(eval_train).set_default(false)
         .describe("Whether evaluate on training data during training.");
@@ -122,19 +127,20 @@ struct CLIParam : public XGBoostParameter<CLIParam> {
         .describe("Name of the output dump text file.");
     // alias
     DMLC_DECLARE_ALIAS(train_path, data);
-    DMLC_DECLARE_ALIAS(test_path, test:data);
+    DMLC_DECLARE_ALIAS(test_path, test:
+      data);
     DMLC_DECLARE_ALIAS(name_fmap, fmap);
   }
   // customized configure function of CLIParam
-  inline void Configure(const std::vector<std::pair<std::string, std::string> >& _cfg) {
+  inline void Configure(const std::vector<std::pair<std::string, std::string> > &_cfg) {
     // Don't copy the configuration to enable parameter validation.
     auto unknown_cfg = this->UpdateAllowUnknown(_cfg);
     this->cfg.emplace_back("validate_parameters", "True");
-    for (const auto& kv : unknown_cfg) {
+    for (const auto &kv : unknown_cfg) {
       if (!strncmp("eval[", kv.first.c_str(), 5)) {
         char evname[256];
         CHECK_EQ(sscanf(kv.first.c_str(), "eval[%[^]]", evname), 1)
-            << "must specify evaluation name for display";
+          << "must specify evaluation name for display";
         eval_data_names.emplace_back(evname);
         eval_data_paths.push_back(kv.second);
       } else {
@@ -151,7 +157,7 @@ struct CLIParam : public XGBoostParameter<CLIParam> {
   }
 };
 
-constexpr char const* const CLIParam::kNull;
+constexpr char const *const CLIParam::kNull;
 
 DMLC_REGISTER_PARAMETER(CLIParam);
 
@@ -159,7 +165,7 @@ std::string CliHelp() {
   return "Use xgboost -h for showing help information.\n";
 }
 
-void CLIError(dmlc::Error const& e) {
+void CLIError(dmlc::Error const &e) {
   std::cerr << "Error running xgboost:\n\n"
             << e.what() << "\n"
             << CliHelp()
@@ -173,7 +179,7 @@ class CLI {
     kNone,
     kVersion,
     kHelp
-  } print_info_ {kNone};
+  } print_info_{kNone};
 
   int ResetLearner(std::vector<std::shared_ptr<DMatrix>> const &matrices) {
     learner_.reset(Learner::Create(matrices));
@@ -267,7 +273,7 @@ class CLI {
               << " sec";
     // always save final round
     if ((param_.save_period == 0 ||
-         param_.num_round % param_.save_period != 0) &&
+        param_.num_round % param_.save_period != 0) &&
         param_.model_out != CLIParam::kNull && rabit::GetRank() == 0) {
       std::ostringstream os;
       if (param_.model_out == CLIParam::kNull) {
@@ -322,7 +328,7 @@ class CLI {
 
   void CLIPredict() {
     CHECK_NE(param_.test_path, CLIParam::kNull)
-        << "Test dataset parameter test:data must be specified.";
+      << "Test dataset parameter test:data must be specified.";
     // load data
     std::shared_ptr<DMatrix> dtest(DMatrix::Load(
         param_.test_path,
@@ -348,7 +354,46 @@ class CLI {
     os.set_stream(nullptr);
   }
 
-  void LoadModel(std::string const& path, Learner* learner) const {
+  void CLIPredictStream() {
+    // load model
+    CHECK_NE(param_.model_in, CLIParam::kNull) << "Must specify model_in for predict";
+    this->ResetLearner({});
+
+    for (std::string line; std::getline(std::cin, line);) {
+      auto input = parse_floats(line);
+
+      // Convert input data to DMatrix
+      data::DenseAdapter adapter(input.data(), 1, input.size());
+      std::shared_ptr<DMatrix> dmat(DMatrix::Create(&adapter, -1, 1));
+
+      // Run prediction
+      HostDeviceVector<bst_float> preds;
+      learner_->Predict(dmat, param_.pred_margin, &preds, param_.ntree_limit);
+
+      // Write output
+      for (bst_float p : preds.ConstHostVector()) {
+        std::cout << std::setprecision(std::numeric_limits<bst_float>::max_digits10) << p
+                  << ' ';
+      }
+      std::cout << '\n';
+      std::flush(std::cout);
+    }
+  }
+
+  // parse_floats parses a space separated string of floats
+  // returns a vector of floats
+  std::vector<float> parse_floats(const std::string &s) {
+    std::vector<float> tokens;
+    std::string token;
+    std::istringstream tokenStream(s);
+    while (std::getline(tokenStream, token, ' ')) {
+      float d = strtof(token.c_str(), NULL);
+      tokens.push_back(d);
+    }
+    return tokens;
+  }
+
+  void LoadModel(std::string const &path, Learner *learner) const {
     if (common::FileExtension(path) == "json") {
       auto str = common::LoadSequentialFile(path);
       CHECK_GT(str.size(), 2);
@@ -361,7 +406,7 @@ class CLI {
     }
   }
 
-  void SaveModel(std::string const& path, Learner* learner) const {
+  void SaveModel(std::string const &path, Learner *learner) const {
     learner->Configure();
     std::unique_ptr<dmlc::Stream> fo(dmlc::Stream::Create(path.c_str(), "w"));
     if (common::FileExtension(path) == "json") {
@@ -439,13 +484,13 @@ class CLI {
   }
 
  public:
-  CLI(int argc, char* argv[]) {
+  CLI(int argc, char *argv[]) {
     if (argc < 2) {
       this->PrintHelp();
       exit(1);
     }
     for (int i = 0; i < argc; ++i) {
-      std::string str {argv[i]};
+      std::string str{argv[i]};
       if (str == "-h" || str == "--help") {
         print_info_ = kHelp;
         break;
@@ -476,31 +521,37 @@ class CLI {
 
   int Run() {
     switch (this->print_info_) {
-    case kNone:
-      break;
-    case kVersion: {
-      this->PrintVersion();
-      return 0;
-    }
-    case kHelp: {
-      this->PrintHelp();
-      return 0;
-    }
+      case kNone:break;
+      case kVersion: {
+        this->PrintVersion();
+        return 0;
+      }
+      case kHelp: {
+        this->PrintHelp();
+        return 0;
+      }
     }
 
     try {
       switch (param_.task) {
-      case kTrain:
-        CLITrain();
-        break;
-      case kDumpModel:
-        CLIDumpModel();
-        break;
-      case kPredict:
-        CLIPredict();
-        break;
+        case kTrain: {
+          CLITrain();
+          break;
+        }
+        case kDumpModel: {
+          CLIDumpModel();
+          break;
+        }
+        case kPredict: {
+          CLIPredict();
+          break;
+        }
+        case kPredictStream: {
+          CLIPredictStream();
+          break;
+        }
       }
-    } catch (dmlc::Error const& e) {
+    } catch (dmlc::Error const &e) {
       xgboost::CLIError(e);
       return 1;
     }
@@ -517,7 +568,7 @@ int main(int argc, char *argv[]) {
   try {
     xgboost::CLI cli(argc, argv);
     return cli.Run();
-  } catch (dmlc::Error const& e) {
+  } catch (dmlc::Error const &e) {
     // This captures only the initialization error.
     xgboost::CLIError(e);
     return 1;
