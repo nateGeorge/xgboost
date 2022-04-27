@@ -323,11 +323,6 @@ On Linux, starting from the XGBoost directory type:
   cmake .. -DUSE_CUDA=ON -DR_LIB=ON
   make install -j$(nproc)
 
-When default target is used, an R package shared library would be built in the ``build`` area.
-The ``install`` target, in addition, assembles the package files with this shared library under ``build/R-package`` and runs ``R CMD INSTALL``.
-
-On Windows, CMake with Visual Studio has to be used to build an R package with GPU support. Rtools must also be installed.
-
 .. note:: Setting correct PATH environment variable on Windows
 
   If you are using Windows, make sure to include the right directories in the PATH environment variable.

@@ -8,10 +8,6 @@ Before running XGBoost, we must set three types of parameters: general parameter
 - **Learning task parameters** decide on the learning scenario. For example, regression tasks may use different parameters with ranking tasks.
 - **Command line parameters** relate to behavior of CLI version of XGBoost.
 
-.. note:: Parameters in R package
-
-  In R-package, you can use ``.`` (dot) to replace underscore in the parameters, for example, you can use ``max.depth`` to indicate ``max_depth``. The underscore parameters are also valid in R.
-
 .. contents::
   :backlinks: none
   :local:

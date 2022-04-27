@@ -26,12 +26,6 @@ Add your test under the directory `tests/cpp/ <https://github.com/dmlc/xgboost/t
 
 You may try running your test by following instructions in :ref:`this section <running_gtest>`. Note. Google Test version 1.8.1 or later is required.
 
-R package: testthat
-===================
-Add your test under the directory `R-package/tests/testthat <https://github.com/dmlc/xgboost/tree/master/R-package/tests/testthat>`_. Refer to `this excellent tutorial on testthat <https://kbroman.org/pkg_primer/pages/tests.html>`_.
-
-You may try running your test by following instructions in :ref:`this section <running_r_tests>`.
-
 **************************
 Running Unit Tests Locally
 **************************

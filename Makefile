@@ -69,9 +69,6 @@ build/%.o: src/%.cc
 amalgamation/xgboost-all0.o: amalgamation/xgboost-all0.cc
 	$(CXX) -c $(CFLAGS) $< -o $@
 
-rcpplint:
-	python3 dmlc-core/scripts/lint.py xgboost ${LINT_LANG} R-package/src
-
 ifeq ($(TEST_COVER), 1)
 cover: check
 	@- $(foreach COV_OBJ, $(COVER_OBJ), \
@@ -82,11 +79,6 @@ endif
 clean:
 	$(RM) -rf build lib bin *~ */*~ */*/*~ */*/*/*~ */*.o */*/*.o */*/*/*.o #xgboost
 	$(RM) -rf build_tests *.gcov tests/cpp/xgboost_test
-	if [ -d "R-package/src" ]; then \
-		cd R-package/src; \
-		$(RM) -rf rabit src include dmlc-core amalgamation *.so *.dll; \
-		cd $(ROOTDIR); \
-	fi
 
 clean_all: clean
 	cd $(DMLC_CORE); "$(MAKE)" clean; cd $(ROOTDIR)
@@ -95,7 +87,6 @@ clean_all: clean
 # Script to make a clean installable R package.
 Rpack: clean_all
 	rm -rf xgboost xgboost*.tar.gz
-	cp -r R-package xgboost
 	rm -rf xgboost/src/*.o xgboost/src/*.so xgboost/src/*.dll
 	rm -rf xgboost/src/*/*.o
 	rm -rf xgboost/demo/*.model xgboost/demo/*.buffer xgboost/demo/*.txt
@@ -111,8 +102,6 @@ Rpack: clean_all
 	cp -r dmlc-core/include xgboost/src/dmlc-core/include
 	cp -r dmlc-core/src xgboost/src/dmlc-core/src
 	cp ./LICENSE xgboost
-# Modify PKGROOT in Makevars.in
-	cat R-package/src/Makevars.in|sed '2s/.*/PKGROOT=./' > xgboost/src/Makevars.in
 # Configure Makevars.win (Windows-specific Makevars, likely using MinGW)
 	cp xgboost/src/Makevars.in xgboost/src/Makevars.win
 	cat xgboost/src/Makevars.in| sed '3s/.*/ENABLE_STD_THREAD=0/' > xgboost/src/Makevars.win
@@ -122,7 +111,6 @@ Rpack: clean_all
 	sed -i -e 's/@BACKTRACE_LIB@//g' xgboost/src/Makevars.win
 	sed -i -e 's/@OPENMP_LIB@//g' xgboost/src/Makevars.win
 	rm -f xgboost/src/Makevars.win-e   # OSX sed create this extra file; remove it
-	bash R-package/remove_warning_suppression_pragma.sh
 	bash xgboost/remove_warning_suppression_pragma.sh
 	rm xgboost/remove_warning_suppression_pragma.sh
 	rm -rfv xgboost/tests/helper_scripts/

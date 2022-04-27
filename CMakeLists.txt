@@ -167,11 +167,6 @@ add_subdirectory(rabit)
 add_subdirectory(${xgboost_SOURCE_DIR}/src)
 target_link_libraries(objxgboost PUBLIC dmlc)
 
-# Exports some R specific definitions and objects
-if (R_LIB)
-  add_subdirectory(${xgboost_SOURCE_DIR}/R-package)
-endif (R_LIB)
-
 # Plugin
 add_subdirectory(${xgboost_SOURCE_DIR}/plugin)
 
@@ -224,15 +219,6 @@ set_output_directory(xgboost ${xgboost_SOURCE_DIR}/lib)
 add_dependencies(xgboost runxgboost)
 
 #-- Installing XGBoost
-if (R_LIB)
-  include(cmake/RPackageInstallTargetSetup.cmake)
-  set_target_properties(xgboost PROPERTIES PREFIX "")
-  if (APPLE)
-    set_target_properties(xgboost PROPERTIES SUFFIX ".so")
-  endif (APPLE)
-  setup_rpackage_install_target(xgboost "${CMAKE_CURRENT_BINARY_DIR}/R-package-install")
-  set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/dummy_inst")
-endif (R_LIB)
 if (MINGW)
   set_target_properties(xgboost PROPERTIES PREFIX "")
 endif (MINGW)

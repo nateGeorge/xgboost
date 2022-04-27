@@ -22,8 +22,6 @@ Contents
   XGBoost User Forum <https://discuss.xgboost.ai>
   GPU support <gpu/index>
   parameter
-  Python package <python/index>
-  R package <R-package/index>
   Ruby package <https://github.com/ankane/xgb>
   Swift package <https://github.com/kongzii/SwiftXGBoost>
   Julia package <julia>
