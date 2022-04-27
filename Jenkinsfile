@@ -73,12 +73,6 @@ pipeline {
       steps {
         script {
           parallel ([
-            'test-python-cpu': { TestPythonCPU() },
-            // artifact_cuda_version doesn't apply to RMM tests; RMM tests will always match CUDA version between artifact and host env
-            'test-python-gpu-cuda10.2': { TestPythonGPU(artifact_cuda_version: '10.0', host_cuda_version: '10.2', test_rmm: true) },
-            'test-python-gpu-cuda11.0-cross': { TestPythonGPU(artifact_cuda_version: '10.0', host_cuda_version: '11.0') },
-            'test-python-gpu-cuda11.0': { TestPythonGPU(artifact_cuda_version: '11.0', host_cuda_version: '11.0') },
-            'test-python-mgpu-cuda10.2': { TestPythonGPU(artifact_cuda_version: '10.0', host_cuda_version: '10.2', multi_gpu: true, test_rmm: true) },
             'test-cpp-gpu-cuda10.2': { TestCppGPU(artifact_cuda_version: '10.2', host_cuda_version: '10.2', test_rmm: true) },
             'test-cpp-gpu-cuda11.0': { TestCppGPU(artifact_cuda_version: '11.0', host_cuda_version: '11.0') },
           ])
@@ -176,16 +170,7 @@ def BuildCUDA(args) {
     }
     sh """
     ${dockerRun} ${container_type} ${docker_binary} ${docker_args} tests/ci_build/build_via_cmake.sh -DUSE_CUDA=ON -DUSE_NCCL=ON -DOPEN_MP:BOOL=ON -DHIDE_CXX_SYMBOLS=ON ${arch_flag}
-    ${dockerRun} ${container_type} ${docker_binary} ${docker_args} bash -c "cd python-package && rm -rf dist/* && python setup.py bdist_wheel --universal"
-    ${dockerRun} ${container_type} ${docker_binary} ${docker_args} python tests/ci_build/rename_whl.py python-package/dist/*.whl ${commit_id} manylinux2010_x86_64
     """
-    echo 'Stashing Python wheel...'
-    stash name: "xgboost_whl_cuda${args.cuda_version}", includes: 'python-package/dist/*.whl'
-    if (args.cuda_version == ref_cuda_ver && (env.BRANCH_NAME == 'master' || env.BRANCH_NAME.startsWith('release'))) {
-      echo 'Uploading Python wheel...'
-      path = ("${BRANCH_NAME}" == 'master') ? '' : "${BRANCH_NAME}/"
-      s3Upload bucket: 'xgboost-nightly-builds', path: path, acl: 'PublicRead', workingDir: 'python-package/dist', includePathPattern:'**/*.whl'
-    }
     echo 'Stashing C++ test executable (testxgboost)...'
     stash name: "xgboost_cpp_tests_cuda${args.cuda_version}", includes: 'build/testxgboost'
     if (args.build_rmm) {
@@ -196,11 +181,7 @@ def BuildCUDA(args) {
       sh """
       rm -rf build/
       ${dockerRun} ${container_type} ${docker_binary} ${docker_args} tests/ci_build/build_via_cmake.sh --conda-env=gpu_test -DUSE_CUDA=ON -DUSE_NCCL=ON -DPLUGIN_RMM=ON ${arch_flag}
-      ${dockerRun} ${container_type} ${docker_binary} ${docker_args} bash -c "cd python-package && rm -rf dist/* && python setup.py bdist_wheel --universal"
-      ${dockerRun} ${container_type} ${docker_binary} ${docker_args} python tests/ci_build/rename_whl.py python-package/dist/*.whl ${commit_id} manylinux2010_x86_64
       """
-      echo 'Stashing Python wheel...'
-      stash name: "xgboost_whl_rmm_cuda${args.cuda_version}", includes: 'python-package/dist/*.whl'
       echo 'Stashing C++ test executable (testxgboost)...'
       stash name: "xgboost_cpp_tests_rmm_cuda${args.cuda_version}", includes: 'build/testxgboost'
     }
@@ -239,7 +220,6 @@ def TestPythonGPU(args) {
     def docker_extra_params = (args.multi_gpu) ? "CI_DOCKER_EXTRA_PARAMS_INIT='--shm-size=4g'" : ''
     sh "${docker_extra_params} ${dockerRun} ${container_type} ${docker_binary} ${docker_args} tests/ci_build/test_python.sh ${mgpu_indicator}"
     if (args.test_rmm) {
-      sh "rm -rfv build/ python-package/dist/"
       unstash name: "xgboost_whl_rmm_cuda${args.host_cuda_version}"
       unstash name: "xgboost_cpp_tests_rmm_cuda${args.host_cuda_version}"
       sh "${docker_extra_params} ${dockerRun} ${container_type} ${docker_binary} ${docker_args} tests/ci_build/test_python.sh ${mgpu_indicator} --use-rmm-pool"

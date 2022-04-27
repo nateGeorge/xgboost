@@ -72,13 +72,6 @@ amalgamation/xgboost-all0.o: amalgamation/xgboost-all0.cc
 rcpplint:
 	python3 dmlc-core/scripts/lint.py xgboost ${LINT_LANG} R-package/src
 
-lint: rcpplint
-	python3 dmlc-core/scripts/lint.py --exclude_path python-package/xgboost/dmlc-core \
-	  python-package/xgboost/include python-package/xgboost/lib \
-	  python-package/xgboost/make python-package/xgboost/rabit \
-	  python-package/xgboost/src --pylint-rc ${PWD}/python-package/.pylintrc xgboost \
-	  ${LINT_LANG} include src python-package
-
 ifeq ($(TEST_COVER), 1)
 cover: check
 	@- $(foreach COV_OBJ, $(COVER_OBJ), \
@@ -98,10 +91,6 @@ clean:
 clean_all: clean
 	cd $(DMLC_CORE); "$(MAKE)" clean; cd $(ROOTDIR)
 	cd $(RABIT); "$(MAKE)" clean; cd $(ROOTDIR)
-
-# create pip source dist (sdist) pack for PyPI
-pippack: clean_all
-	cd python-package; python setup.py sdist; mv dist/*.tar.gz ..; cd ..
 
 # Script to make a clean installable R package.
 Rpack: clean_all

@@ -48,33 +48,6 @@ Run
 
 at the root of the project directory.
 
-Python package: pytest
-======================
-
-To run Python unit tests, first install `pytest <https://docs.pytest.org/en/latest/contents.html>`_ package:
-
-.. code:: bash
-
-  pip3 install pytest
-
-Then compile XGBoost according to instructions in :ref:`build_shared_lib`. Finally, invoke pytest at the project root directory:
-
-.. code:: bash
-
-  # Tell Python where to find XGBoost module
-  export PYTHONPATH=./python-package
-  pytest -v -s --fulltrace tests/python
-
-In addition, to test CUDA code, run:
-
-.. code:: bash
-
-  # Tell Python where to find XGBoost module
-  export PYTHONPATH=./python-package
-  pytest -v -s --fulltrace tests/python-gpu
-
-(For this step, you should have compiled XGBoost with CUDA enabled.)
-
 .. _running_gtest:
 
 C++: Google Test
