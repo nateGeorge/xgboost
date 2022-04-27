@@ -48,33 +48,6 @@ Debug
 *.Rproj
 ./xgboost.mpi
 ./xgboost.mock
-#.Rbuildignore
-R-package.Rproj
-*.cache*
-.mypy_cache/
-# java
-java/xgboost4j/target
-java/xgboost4j/tmp
-java/xgboost4j-demo/target
-java/xgboost4j-demo/data/
-java/xgboost4j-demo/tmp/
-java/xgboost4j-demo/model/
-nb-configuration*
-# Eclipse
-.project
-.cproject
-.pydevproject
-.settings/
-build
-/xgboost
-*.data
-build_plugin
-recommonmark/
-tags
-TAGS
-*.class
-target
-*.swp
 
 # cpp tests and gcov generated files
 *.gcov

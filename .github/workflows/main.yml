@@ -104,44 +104,6 @@ jobs:
         cd ..
         ./build/api-demo
 
-  test-with-jvm:
-    name: Test JVM on OS ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest, ubuntu-latest]
-
-    steps:
-    - uses: actions/checkout@v2
-      with:
-        submodules: 'true'
-
-    - uses: actions/setup-java@v1
-      with:
-        java-version: 1.8
-
-    - name: Cache Maven packages
-      uses: actions/cache@v2
-      with:
-        path: ~/.m2
-        key: ${{ runner.os }}-m2-${{ hashFiles('./jvm-packages/pom.xml') }}
-        restore-keys: ${{ runner.os }}-m2
-
-    - name: Test XGBoost4J
-      run: |
-        cd jvm-packages
-        mvn test -B -pl :xgboost4j_2.12
-
-    - name: Test XGBoost4J-Spark
-      run: |
-        rm -rfv build/
-        cd jvm-packages
-        mvn -B test
-      if: matrix.os == 'ubuntu-latest'  # Distributed training doesn't work on Windows
-      env:
-        RABIT_MOCK: ON
-
   lint:
     runs-on: ubuntu-latest
     name: Code linting for Python and C++

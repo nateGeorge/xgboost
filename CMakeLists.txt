@@ -30,7 +30,6 @@ option(USE_OPENMP "Build with OpenMP support." ON)
 option(BUILD_STATIC_LIB "Build static library" OFF)
 option(RABIT_BUILD_MPI "Build MPI" OFF)
 ## Bindings
-option(JVM_BINDINGS "Build JVM bindings" OFF)
 option(R_LIB "Build shared library for R package" OFF)
 ## Dev
 option(USE_DEBUG_OUTPUT "Dump internal training results like gradients and predictions to stdout.
@@ -82,9 +81,6 @@ endif (USE_DEVICE_DEBUG AND NOT (USE_CUDA))
 if (BUILD_WITH_SHARED_NCCL AND (NOT USE_NCCL))
   message(SEND_ERROR "Build XGBoost with -DUSE_NCCL=ON to enable BUILD_WITH_SHARED_NCCL.")
 endif (BUILD_WITH_SHARED_NCCL AND (NOT USE_NCCL))
-if (JVM_BINDINGS AND R_LIB)
-  message(SEND_ERROR "`R_LIB' is not compatible with `JVM_BINDINGS' as they both have customized configurations.")
-endif (JVM_BINDINGS AND R_LIB)
 if (R_LIB AND GOOGLE_TEST)
   message(WARNING "Some C++ unittests will fail with `R_LIB` enabled,
  as R package redirects some functions to R runtime implementation.")
@@ -106,9 +102,6 @@ if (ENABLE_ALL_WARNINGS)
     message(SEND_ERROR "ENABLE_ALL_WARNINGS is only available for Clang and GCC.")
   endif ((NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang") AND (NOT CMAKE_CXX_COMPILER_ID STREQUAL "GNU"))
 endif (ENABLE_ALL_WARNINGS)
-if (BUILD_STATIC_LIB AND (R_LIB OR JVM_BINDINGS))
-  message(SEND_ERROR "Cannot build a static library libxgboost.a when R or JVM packages are enabled.")
-endif (BUILD_STATIC_LIB AND (R_LIB OR JVM_BINDINGS))
 
 #-- Sanitizer
 if (USE_SANITIZER)
@@ -205,12 +198,6 @@ target_include_directories(xgboost
   INTERFACE
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>)
-
-# This creates its own shared library `xgboost4j'.
-if (JVM_BINDINGS)
-  add_subdirectory(${xgboost_SOURCE_DIR}/jvm-packages)
-endif (JVM_BINDINGS)
-#-- End shared library
 
 #-- CLI for xgboost
 add_executable(runxgboost ${xgboost_SOURCE_DIR}/src/cli_main.cc)

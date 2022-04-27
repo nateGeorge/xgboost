@@ -26,18 +26,6 @@ Add your test under the directory `tests/cpp/ <https://github.com/dmlc/xgboost/t
 
 You may try running your test by following instructions in :ref:`this section <running_gtest>`. Note. Google Test version 1.8.1 or later is required.
 
-JVM packages: JUnit / scalatest
-===============================
-The JVM packages for XGBoost (XGBoost4J / XGBoost4J-Spark) use `the Maven Standard Directory Layout <https://maven.apache.org/guides/introduction/introduction-to-the-standard-directory-layout.html>`_. Specifically, the tests for the JVM packages are located in the following locations:
-
-* `jvm-packages/xgboost4j/src/test/ <https://github.com/dmlc/xgboost/tree/master/jvm-packages/xgboost4j/src/test>`_
-* `jvm-packages/xgboost4j-spark/src/test/ <https://github.com/dmlc/xgboost/tree/master/jvm-packages/xgboost4j-spark/src/test>`_
-
-To write a test for Java code, see `JUnit 5 tutorial <https://junit.org/junit5/docs/current/user-guide/>`_.
-To write a test for Scala, see `Scalatest tutorial <http://www.scalatest.org/user_guide/writing_your_first_test>`_.
-
-You may try running your test by following instructions in :ref:`this section <running_jvm_tests>`.
-
 R package: testthat
 ===================
 Add your test under the directory `R-package/tests/testthat <https://github.com/dmlc/xgboost/tree/master/R-package/tests/testthat>`_. Refer to `this excellent tutorial on testthat <https://kbroman.org/pkg_primer/pages/tests.html>`_.
@@ -59,18 +47,6 @@ Run
   make Rcheck
 
 at the root of the project directory.
-
-.. _running_jvm_tests:
-
-JVM packages
-============
-As part of the building process, tests are run:
-
-.. code-block:: bash
-
-  mvn package
-
-.. _running_pytest:
 
 Python package: pytest
 ======================

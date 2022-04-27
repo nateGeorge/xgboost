@@ -80,14 +80,6 @@ if [ ${TASK} == "python_test" ]; then
     python -m awscli s3 cp python-package/dist/*.whl "${S3_DEST}" --acl public-read || true
 fi
 
-if [ ${TASK} == "java_test" ]; then
-    export RABIT_MOCK=ON
-    conda activate python3
-    cd jvm-packages
-    mvn -q clean install -DskipTests -Dmaven.test.skip
-    mvn -q test
-fi
-
 if [ ${TASK} == "s390x_test" ]; then
     set -e
 
